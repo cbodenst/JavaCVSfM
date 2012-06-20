@@ -12,6 +12,7 @@ import com.googlecode.javacv.cpp.opencv_core.CvPoint3D32f;
 import com.googlecode.javacv.cpp.opencv_features2d;
 import com.googlecode.javacv.cpp.opencv_core.IplImage;
 import com.googlecode.javacv.cpp.opencv_features2d.DMatch;
+import com.googlecode.javacv.cpp.opencv_nonfree.SURF;
 import com.googlecode.javacv.cpp.opencv_features2d.*;
 
 public class HelloWorld {
@@ -74,16 +75,16 @@ public class HelloWorld {
     
     public static KeyPoint findKeypoints(IplImage image)
     {
-
-    	SurfFeatureDetector detector = new SurfFeatureDetector();
+    	SURF detector = new SURF(300.0);
     	KeyPoint v1 = new KeyPoint();
-    	detector.detect(image, v1, null);
+    	detector.detect(image, null, v1);
     	return v1;
     }
     
     public static DMatch findMatchingFeature(IplImage image1, IplImage image2,KeyPoint keypoints1,KeyPoint keypoints2, CvMat essential)
     {
-    	SurfDescriptorExtractor extractor = new SurfDescriptorExtractor();
+    	SURF detector = new SURF(300.0);
+    	DescriptorExtractor extractor = detector.getDescriptorExtractor();
     	
     	CvMat descriptors_1 = CvMat.create(1, keypoints1.capacity(), CV_32F);
     	CvMat descriptors_2 = CvMat.create(1, keypoints2.capacity(), CV_32F);
