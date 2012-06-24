@@ -75,7 +75,7 @@ public class HelloWorld {
     
     public static KeyPoint findKeypoints(IplImage image)
     {
-    	SURF detector = new SURF(300.0);
+    	SURF detector = new SURF(500.0);
     	KeyPoint v1 = new KeyPoint();
     	detector.detect(image, null, v1);
     	return v1;
@@ -83,7 +83,7 @@ public class HelloWorld {
     
     public static DMatch findMatchingFeature(IplImage image1, IplImage image2,KeyPoint keypoints1,KeyPoint keypoints2, CvMat essential)
     {
-    	SURF detector = new SURF(300.0);
+    	SURF detector = new SURF(500.0);
     	DescriptorExtractor extractor = detector.getDescriptorExtractor();
     	
     	CvMat descriptors_1 = CvMat.create(1, keypoints1.capacity(), CV_32F);
@@ -111,7 +111,7 @@ public class HelloWorld {
 
    	 	matches.position(0);
    	 	
-   	 	double t = 60;
+   	 	double t = 100;
    	 	
    	 	int j= 0;
    	 	for(int i = 0; i < descriptors_1.rows(); i++ )
