@@ -3,10 +3,15 @@ import static com.googlecode.javacv.cpp.opencv_imgproc.*;
 import static com.googlecode.javacv.cpp.opencv_highgui.*;
 
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 
+import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.xml.crypto.dsig.spec.XSLTTransformParameterSpec;
 
 import com.googlecode.javacv.cpp.opencv_core.CvPoint3D32f;
 import com.googlecode.javacv.cpp.opencv_features2d;
@@ -17,15 +22,19 @@ import com.googlecode.javacv.cpp.opencv_features2d.*;
 
 public class HelloWorld {
 	
-	
+	public static GrowingNeuralGas gas = new GrowingNeuralGas();
     public static void main(String[] args) throws Exception {
     	CvMat map = CvMat.create(1000,1000,CV_32F);
-    	for(int i = 50; i<=50; i+=10)
+    	int k =0;
+    	while (k<100)
+    	for(int i = 30; i<=50; i+=10)
     	{
+    		System.out.println(k);
     		CvMat delta_map = build3dMap(i, i + 10);
     		CvMat add = CvMat.create(map.rows(), map.cols(), map.depth());
     		cvAdd(delta_map, map, add,null);
     		map=add;
+    		k++;
        	}
     	
     	IplImage map_img = IplImage.create(cvSize(map.cols(), map.rows()), IPL_DEPTH_8U, 1);
@@ -34,12 +43,21 @@ public class HelloWorld {
    	    showImage(map_img);
    	    
    	    
-   	    
+   	    gas.printNodes();
     	
     }
-    public static IplImage openImage(String path)
+    public static IplImage openImage(String path) 
     {
-    	return cvLoadImage(path);
+    	IplImage ret = null;
+    	BufferedImage bi;
+		try {
+			bi = ImageIO.read(new File(path));
+	    	ret = IplImage.createFrom(bi);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	return ret;
     }
     
     public static void showImage(IplImage img)
@@ -160,10 +178,10 @@ public class HelloWorld {
    	 	good_matches2.position(0);
    	 	matches.position(0);
    	 	
-   	 	IplImage out = IplImage.create(cvSize(2*image1.width(), image1.height()),image1.depth(),image1.nChannels());
-   	 	opencv_features2d.drawMatches(image1, keypoints1, image2, keypoints2, good_matches2, out, cvScalarAll(-1), cvScalarAll(-1), null, 2);
+   	 	//IplImage out = IplImage.create(cvSize(2*image1.width(), image1.height()),image1.depth(),image1.nChannels());
+   	 	//opencv_features2d.drawMatches(image1, keypoints1, image2, keypoints2, good_matches2, out, cvScalarAll(-1), cvScalarAll(-1), null, 2);
    	 	   	 	
-   	 	showImage(out);
+   	 	//showImage(out);
    	    
    	 	return good_matches2;
     
@@ -366,7 +384,9 @@ public class HelloWorld {
     		if(x < size_x && z < size_z && x > 0 && z > 0)
     		{
     			map.put(z,x,temp.get(1,0)+50);
-    			System.out.println(temp.get(0,0)+"\t"+temp.get(0,1)+"\t"+temp.get(0,2));
+    			gas.input(temp);
+    			//System.out.println(temp.get(0,0)+"\t"+temp.get(0,1)+"\t"+temp.get(0,2));
+    			
     		}
     	}
     	matches.position(0);
@@ -432,9 +452,12 @@ public class HelloWorld {
    	    
     	//System.out.println("Matching Keypoint...");
     	DMatch good_matches = findMatchingFeature(image1, image2, v1, v2,e);
+   	    
 
     	//System.out.println("Building Map...");
    	    CvMat map = buildMap(v1,P1,v2,P2,good_matches);
+   	    image1=null;
+   	    image2=null;
    	    return map;
     }
     

@@ -1,26 +1,52 @@
 import static com.googlecode.javacv.cpp.opencv_core.*;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
 
 public class GrowingNeuralGas extends Thread {
 	private int idpool=0;
-	private double lambda=0.5;
+	private double lambda=10;
+	private final double e_w=0.05;
+	private final double e_n=0.0005;
+	private final int A_MAX =3;
+	private final double alpha = 0.5;
+	private final double beta = 0.0005;
+	
+
 	private Node s;
 	private Node t;
 	private Node r;
 	private Node u;
 	private Node v;
-	private final double e_w=0.5;
-	private final double e_n=0.5;
-	private final int A_MAX =50;
+	private int counter;
+	
+
+	private ArrayList<Node> nodes = new ArrayList<Node>();
+	
+	public GrowingNeuralGas()
+	{
+		v = new Node();
+		u= new Node();
+		Edge e = new Edge(v,u,0);
+		v.edges.add(e);
+		v.weight.put(0,0,0);
+		v.weight.put(1,0,0);
+		v.weight.put(2,0,0);
+		u.edges.add(e);
+
+		u.weight.put(0,0,1);
+		u.weight.put(1,0,1);
+		u.weight.put(2,0,1);
+			
+		nodes.add(v);
+		nodes.add(u);
+	}
 	
 	private class Edge
 	{
 		public int age;
 		public Node node1;
 		public Node node2;
+		
 		
 		public Edge(Node n1,Node n2,int age)
 		{
@@ -57,30 +83,36 @@ public class GrowingNeuralGas extends Thread {
 		public void removeEdge(Edge e)
 		{
 			edges.remove(e);
-			Node otherNode = nodes.get(e.getConnectedNode(this));
-			otherNode.removeEdge(e);
+			Node otherNode = e.getConnectedNode(this);
+			otherNode.edges.remove(e);
 			if(this.edges.size()<=0)
 				nodes.remove(this);
 			if(otherNode.edges.size()<=0)
 				nodes.remove(otherNode);
 		}
 	}
-	private HashMap<Integer,Node> nodes = new HashMap<Integer,Node>();
+	
+	private double norm(Node n,CvMat x)
+	{
+		double value = Math.pow(x.get(0,0)-n.weight.get(0,0),2);
+		value += Math.pow(x.get(1,0)-n.weight.get(1,0),2);
+		value += Math.pow(x.get(2,0)-n.weight.get(2,0),2);
+		
+		return value;
+		
+	}
 	
 	private void findnearestsNeighbours(CvMat x)
 	{
 		double max=0;
-		Node next = null;
-		double nextvalue = 1000000000;
-		Node nextnext = null;
-		double nextnextvalue = 1000000000;
-		Iterator it = nodes.entrySet().iterator();
-		while(it.hasNext())
+		Node next = nodes.get(0);
+		double nextvalue = norm(next,x);
+		Node nextnext = nodes.get(1);
+		double nextnextvalue = norm(nextnext,x);
+		for (int i = 0;i<nodes.size();i++)
 		{
-			Node n = (Node)it.next();
-			double value = Math.pow(x.get(0,0)-n.weight.get(0,0),2);
-			value += Math.pow(x.get(1,0)-n.weight.get(1,0),2);
-			value += Math.pow(x.get(2,0)-n.weight.get(2,0),2);
+			Node n = nodes.get(i);
+			double value = norm(n,x);
 			if(value < nextvalue)
 			{
 				nextnext=next;
@@ -93,11 +125,11 @@ public class GrowingNeuralGas extends Thread {
 				max=value;
 				u=n;
 			}
-			s=next;
-			t=nextnext;
-			s.error+=nextvalue;
-			t.error+=nextnextvalue;
 		}
+		s=next;
+		t=nextnext;
+		s.error+=nextvalue;
+		t.error+=nextnextvalue;
 	}
 	private void updateWeights(CvMat x)
 	{
@@ -110,9 +142,10 @@ public class GrowingNeuralGas extends Thread {
 		for(int i = 0; i<s.edges.size();i++)
 		{
 			Edge e = s.edges.get(i);
-			if(e.age>A_MAX)
+			if(e.age > A_MAX)
 			{
 				s.removeEdge(e);
+				t_found=true;
 				break;
 			}
 				
@@ -122,7 +155,7 @@ public class GrowingNeuralGas extends Thread {
 			n.weight.put(2,0,n.weight.get(2,0)+e_n*(n.weight.get(2,0)-x.get(2,0)));
 			
 			e.age++;
-			
+
 			if(n.id == t.id)
 			{
 				t_found=true;
@@ -141,34 +174,76 @@ public class GrowingNeuralGas extends Thread {
 	
 	private void addNode(CvMat x)
 	{
+		Edge todelete=null;
 		double max=0;
-		Iterator it = u.edges.iterator();
-		while(it.hasNext())
+		for (int i = 0; i < u.edges.size();i++)
 		{
-			Edge e = (Edge)it.next();
+			Edge e = u.edges.get(i);
 			Node n = e.getConnectedNode(u);
 			double value = n.error;
 			if(value>max)
 			{
 				max=value;
 				v=n;
+				todelete=e;
 			}
-			Node r = new Node();
-			r.weight.put(0,0,(u.weight.get(0,0)+v.weight.get(0,0))/2);
-			r.weight.put(1,0,(u.weight.get(1,0)+v.weight.get(1,0))/2);
-			r.weight.put(2,0,(u.weight.get(2,0)+v.weight.get(2,0))/2);
-			
-			Edge e1 =new Edge(u,r,0);
-			Edge e2 = new Edge(v,r,0);
-			
-			r.edges.add(e1);
-			r.edges.add(e2);
-			u.edges.add(e1);
-			v.edges.add(e2);
-			
-			
-		}	
+		}
+		r = new Node();
+		r.weight.put(0,0,(u.weight.get(0,0)+v.weight.get(0,0))/2);
+		r.weight.put(1,0,(u.weight.get(1,0)+v.weight.get(1,0))/2);
+		r.weight.put(2,0,(u.weight.get(2,0)+v.weight.get(2,0))/2);
 		
+		Edge e1 =new Edge(u,r,0);
+		Edge e2 = new Edge(v,r,0);
+			
+			
+		r.edges.add(e1);
+		r.edges.add(e2);
+		u.edges.add(e1);
+		v.edges.add(e2);
+		
+
+		u.removeEdge(todelete);
+		
+		nodes.add(r);
+			
+		u.error *= alpha;
+		v.error *= alpha;
+		r.error=u.error;
+			
+			
+			
+
+	}
+	
+	private void recalculateErrors()
+	{
+		for (int i = 0;i<nodes.size();i++)
+		{
+			Node n = nodes.get(i);
+			n.error -= n.error*beta;
+		}
+	}
+	
+	public void printNodes()
+	{
+		for (int i = 0;i<nodes.size();i++)
+		{
+			Node n = nodes.get(i);
+			System.out.println(n.weight.get(0,0)+"\t"+n.weight.get(1,0)+"\t"+n.weight.get(2,0));
+		}
+	}
+	public void input(CvMat x)
+	{
+		counter++;
+		findnearestsNeighbours(x);
+		updateWeights(x);
+		if(counter>lambda)
+		{
+			counter = 0;
+			addNode(x);
+		}
+		recalculateErrors();
 	}
 	
 	
