@@ -27,15 +27,17 @@ public class HelloWorld {
     	CvMat map = CvMat.create(1000,1000,CV_32F);
     	int k =0;
     	while (k<100)
-    	for(int i = 30; i<=50; i+=10)
     	{
+	    	for(int i = 30; i<=50; i+=10)
+	    	{
+	    		CvMat delta_map = build3dMap(i, i + 10);
+	    		CvMat add = CvMat.create(map.rows(), map.cols(), map.depth());
+	    		cvAdd(delta_map, map, add,null);
+	    		map=add;
+	       	}
     		System.out.println(k);
-    		CvMat delta_map = build3dMap(i, i + 10);
-    		CvMat add = CvMat.create(map.rows(), map.cols(), map.depth());
-    		cvAdd(delta_map, map, add,null);
-    		map=add;
-    		k++;
-       	}
+			k++;
+		}
     	
     	IplImage map_img = IplImage.create(cvSize(map.cols(), map.rows()), IPL_DEPTH_8U, 1);
    	    cvConvertScaleAbs(map, map_img, 1, 0);
@@ -74,7 +76,7 @@ public class HelloWorld {
     
     public static IplImage resize(IplImage img, int width,int heigth)
     {
-    	IplImage rezise = cvCreateImage(cvSize(width,heigth),img.depth(),img.nChannels());
+    	IplImage rezise = IplImage.create(cvSize(width,heigth),img.depth(),img.nChannels());
     	cvResize(img, rezise);
     	return rezise;
     }

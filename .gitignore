@@ -1,3 +1,4 @@
 ﻿.classpath
 bin/HelloWorld.class
 *.classpath
+bin/

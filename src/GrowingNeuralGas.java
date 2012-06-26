@@ -4,12 +4,14 @@ import java.util.ArrayList;
 
 public class GrowingNeuralGas extends Thread {
 	private int idpool=0;
-	private double lambda=10;
-	private final double e_w=0.05;
-	private final double e_n=0.0005;
-	private final int A_MAX =3;
+	
+	private final double lambda=20;
+	private final double e_w=0.5;
+	private final double e_n=0.05;
+	private final int A_MAX =5;
 	private final double alpha = 0.5;
 	private final double beta = 0.0005;
+	private final int max_nodes=40;
 	
 
 	private Node s;
@@ -28,14 +30,14 @@ public class GrowingNeuralGas extends Thread {
 		u= new Node();
 		Edge e = new Edge(v,u,0);
 		v.edges.add(e);
-		v.weight.put(0,0,0);
+		v.weight.put(0,0,44);
 		v.weight.put(1,0,0);
-		v.weight.put(2,0,0);
+		v.weight.put(2,0,24);
 		u.edges.add(e);
 
-		u.weight.put(0,0,1);
-		u.weight.put(1,0,1);
-		u.weight.put(2,0,1);
+		u.weight.put(0,0,44);
+		u.weight.put(1,0,6);
+		u.weight.put(2,0,24);
 			
 		nodes.add(v);
 		nodes.add(u);
@@ -82,13 +84,36 @@ public class GrowingNeuralGas extends Thread {
 		
 		public void removeEdge(Edge e)
 		{
-			edges.remove(e);
 			Node otherNode = e.getConnectedNode(this);
+			edges.remove(e);
 			otherNode.edges.remove(e);
 			if(this.edges.size()<=0)
+			{
 				nodes.remove(this);
+				System.out.println("NODE REMOVED");
+			}
 			if(otherNode.edges.size()<=0)
-				nodes.remove(otherNode);
+			{
+				nodes.remove(otherNode);		
+				System.out.println("NODE REMOVED");
+			}
+
+		}
+	}
+	
+	private void removeEdges()
+	{
+		for (int i = 0;i<nodes.size();i++)
+		{
+			Node n = nodes.get(i);
+			for(int j=0; j<n.edges.size();j++)
+			{
+				Edge e = n.edges.get(j);
+				if(e.age > A_MAX)
+				{
+					s.removeEdge(e);
+				}
+			}
 		}
 	}
 	
@@ -104,11 +129,9 @@ public class GrowingNeuralGas extends Thread {
 	
 	private void findnearestsNeighbours(CvMat x)
 	{
-		double max=0;
 		Node next = nodes.get(0);
 		double nextvalue = norm(next,x);
 		Node nextnext = nodes.get(1);
-		double nextnextvalue = norm(nextnext,x);
 		for (int i = 0;i<nodes.size();i++)
 		{
 			Node n = nodes.get(i);
@@ -116,43 +139,31 @@ public class GrowingNeuralGas extends Thread {
 			if(value < nextvalue)
 			{
 				nextnext=next;
-				nextnextvalue=nextvalue;
+				
 				next=n;
 				nextvalue=value;
-			}
-			if(value>max)
-			{
-				max=value;
-				u=n;
 			}
 		}
 		s=next;
 		t=nextnext;
 		s.error+=nextvalue;
-		t.error+=nextnextvalue;
 	}
 	private void updateWeights(CvMat x)
 	{
-		s.weight.put(0,0,s.weight.get(0,0)+e_w*(s.weight.get(0,0)-x.get(0,0)));
-		s.weight.put(1,0,s.weight.get(1,0)+e_w*(s.weight.get(1,0)-x.get(1,0)));
-		s.weight.put(2,0,s.weight.get(2,0)+e_w*(s.weight.get(2,0)-x.get(2,0)));
+		s.weight.put(0,0,s.weight.get(0,0)+e_w*(x.get(0,0)-s.weight.get(0,0)));
+		s.weight.put(1,0,s.weight.get(1,0)+e_w*(x.get(1,0)-s.weight.get(1,0)));
+		s.weight.put(2,0,s.weight.get(2,0)+e_w*(x.get(2,0)-s.weight.get(2,0)));
 		
 		boolean t_found = false;
 		
 		for(int i = 0; i<s.edges.size();i++)
 		{
 			Edge e = s.edges.get(i);
-			if(e.age > A_MAX)
-			{
-				s.removeEdge(e);
-				t_found=true;
-				break;
-			}
 				
 			Node n = e.getConnectedNode(s);
-			n.weight.put(0,0,n.weight.get(0,0)+e_n*(n.weight.get(0,0)-x.get(0,0)));
-			n.weight.put(1,0,n.weight.get(1,0)+e_n*(n.weight.get(1,0)-x.get(1,0)));
-			n.weight.put(2,0,n.weight.get(2,0)+e_n*(n.weight.get(2,0)-x.get(2,0)));
+			n.weight.put(0,0, n.weight.get(0,0) + e_n*( x.get(0,0)-n.weight.get(0,0) ) );
+			n.weight.put(1,0, n.weight.get(1,0) + e_n*( x.get(1,0)-n.weight.get(1,0) ) );
+			n.weight.put(2,0, n.weight.get(2,0) + e_n*( x.get(2,0)-n.weight.get(2,0) ) );
 			
 			e.age++;
 
@@ -172,10 +183,20 @@ public class GrowingNeuralGas extends Thread {
 		}
 	}
 	
-	private void addNode(CvMat x)
+	private void addNode()
 	{
+		double max = -1;
+		for(int i = 0; i<nodes.size();i++)
+		{
+			Node n = nodes.get(i);
+			if(s.error>max)
+			{
+				max=s.error;
+				u=n;
+			}
+		}
+		max=-1;
 		Edge todelete=null;
-		double max=0;
 		for (int i = 0; i < u.edges.size();i++)
 		{
 			Edge e = u.edges.get(i);
@@ -238,12 +259,27 @@ public class GrowingNeuralGas extends Thread {
 		counter++;
 		findnearestsNeighbours(x);
 		updateWeights(x);
+		removeEdges();
 		if(counter>lambda)
 		{
 			counter = 0;
-			addNode(x);
+			if(nodes.size()<max_nodes)
+				addNode();
 		}
 		recalculateErrors();
+		printError();
+	}
+	
+	public void printError()
+	{
+		double mean_error=0;
+		for (int i = 0;i<nodes.size();i++)
+		{
+			Node n = nodes.get(i);
+			mean_error+=n.error;
+		}
+		System.out.println("Mean-Error:"+mean_error/(double)nodes.size());
+		
 	}
 	
 	

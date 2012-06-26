@@ -22,8 +22,8 @@ for ps in points:
 
 n = 100
 ax.scatter(x,z,y, marker='o')
-#plt.ylim([450,550])
-#plt.xlim([450,550])
+plt.ylim([0,100])
+plt.xlim([0,100])
 #plt.zlim([0,100])
 #x = [6,3,6,9,12,24]
 #y = [3,5,78,12,23,56]
