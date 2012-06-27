@@ -6,6 +6,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
@@ -22,13 +23,17 @@ import com.googlecode.javacv.cpp.opencv_features2d.*;
 
 public class HelloWorld {
 	
+	
+	public static final int xscale = 1200;
+	public static final int yscale = 1600;
+	
 	public static GrowingNeuralGas gas = new GrowingNeuralGas();
     public static void main(String[] args) throws Exception {
     	CvMat map = CvMat.create(1000,1000,CV_32F);
     	int k =0;
-    	while (k<100)
+    	while (k<3)
     	{
-	    	for(int i = 30; i<=50; i+=10)
+	    	for(int i = 40; i<=50; i+=10)
 	    	{
 	    		CvMat delta_map = build3dMap(i, i + 10);
 	    		CvMat add = CvMat.create(map.rows(), map.cols(), map.depth());
@@ -331,12 +336,12 @@ public class HelloWorld {
     {
     	CvMat ret = CvMat.create(3, 3);
     	CvMat camMat = CvMat.create(3, 3);
-    	ret.put(0,0,300);
+    	ret.put(0,0,xscale/2);
     	ret.put(0,1,0.);
-    	ret.put(0,2, 300);
+    	ret.put(0,2, xscale/2);
     	ret.put(1,0,0.);
-    	ret.put(1,1,400);
-    	ret.put(1,2, 400);
+    	ret.put(1,1,yscale/2);
+    	ret.put(1,2, yscale/2);
     	ret.put(2,0, 0.);
     	ret.put(2,1, 0.);
     	ret.put(2,2, 1.);
@@ -370,6 +375,7 @@ public class HelloWorld {
     	CvMat point1_inv = CvMat.create(3, 1);
     	CvMat point2_inv = CvMat.create(3, 1);
     	CvMat map = CvMat.create(size_x, size_z);
+    	ArrayList<CvMat> points = new ArrayList<CvMat>();
     	for (int i =0; i < matches.capacity() && i <p2.capacity();i++)
     	{
     		point1.put(0,0,p1.position(matches.position(i).queryIdx()).pt_x());
@@ -385,12 +391,14 @@ public class HelloWorld {
 			int z = (int) Math.floor(temp.get(2,0)) + size_z/2;
     		if(x < size_x && z < size_z && x > 0 && z > 0)
     		{
+    			points.add(temp);
     			map.put(z,x,temp.get(1,0)+50);
-    			gas.input(temp);
+    			//gas.input(temp);
     			//System.out.println(temp.get(0,0)+"\t"+temp.get(0,1)+"\t"+temp.get(0,2));
     			
     		}
     	}
+    	gas.input(points);
     	matches.position(0);
     	return map;
     	
@@ -433,8 +441,8 @@ public class HelloWorld {
     	IplImage image1 = openImage("res/gnome-0-"+im_1+"-0.jpg");
     	IplImage image2 = openImage("res/gnome-0-"+im_2+"-0.jpg");
     	//System.out.println("resize images...");
-    	image1 = resize(image1, 600, 800);
-    	image2 = resize(image2, 600, 800);
+    	image1 = resize(image1, xscale, yscale);
+    	image2 = resize(image2, xscale, yscale);
 
     	//System.out.println("Finding Keypoint...");
     	KeyPoint v1 = findKeypoints(image1);

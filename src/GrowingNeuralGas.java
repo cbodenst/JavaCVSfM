@@ -1,17 +1,20 @@
 import static com.googlecode.javacv.cpp.opencv_core.*;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 public class GrowingNeuralGas extends Thread {
 	private int idpool=0;
 	
-	private final double lambda=20;
+	private Random random = new Random(System.currentTimeMillis());
+	
+	private final double lambda=70;
 	private final double e_w=0.5;
-	private final double e_n=0.05;
-	private final int A_MAX =5;
+	private final double e_n=0.06;
+	private final int A_MAX =10;
 	private final double alpha = 0.5;
-	private final double beta = 0.0005;
-	private final int max_nodes=40;
+	private final double beta = 0.005;
+	private final int max_nodes=60;
 	
 
 	private Node s;
@@ -230,9 +233,7 @@ public class GrowingNeuralGas extends Thread {
 			
 		u.error *= alpha;
 		v.error *= alpha;
-		r.error=u.error;
-			
-			
+		r.error=u.error;			
 			
 
 	}
@@ -267,7 +268,16 @@ public class GrowingNeuralGas extends Thread {
 				addNode();
 		}
 		recalculateErrors();
-		printError();
+		//printError();
+	}
+	
+	public void input(ArrayList<CvMat> xs)
+	{
+		for(int i =0; i<100000; i++)
+		{
+			CvMat x = xs.get(random.nextInt(xs.size()));
+			input(x);		
+		}		
 	}
 	
 	public void printError()
@@ -278,8 +288,7 @@ public class GrowingNeuralGas extends Thread {
 			Node n = nodes.get(i);
 			mean_error+=n.error;
 		}
-		System.out.println("Mean-Error:"+mean_error/(double)nodes.size());
-		
+		System.out.println("Mean-Error:"+mean_error/(double)nodes.size());		
 	}
 	
 	
